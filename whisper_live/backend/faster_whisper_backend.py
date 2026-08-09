@@ -85,10 +85,9 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.vad_parameters = vad_parameters or {"threshold": 0.5}
         self.hotwords = hotwords
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
         if device == "cuda":
-            major, _ = torch.cuda.get_device_capability(device)
-            self.compute_type = "float16" if major >= 7 else "float32"
+            self.compute_type = "float16"
         else:
             self.compute_type = "int8"
 

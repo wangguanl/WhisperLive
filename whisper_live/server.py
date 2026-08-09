@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from starlette.responses import PlainTextResponse, StreamingResponse
 import uvicorn
 from faster_whisper import WhisperModel
+import ctranslate2
 import torch
 
 from enum import Enum
@@ -500,7 +501,7 @@ class TranscriptionServer:
                     shutil.copyfileobj(file.file, tmp)
                     tmp_path = tmp.name
 
-                device = "cuda" if torch.cuda.is_available() else "cpu"
+                device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
                 compute_type = "float16" if device == "cuda" else "int8"
                 model_name = faster_whisper_custom_model_path or "small"
                 transcriber = WhisperModel(model_name, device=device, compute_type=compute_type)
@@ -778,7 +779,7 @@ class TranscriptionServer:
                         shutil.copyfileobj(file.file, tmp)
                         tmp_path = tmp.name
 
-                    device = "cuda" if torch.cuda.is_available() else "cpu"
+                    device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
                     compute_type = "float16" if device == "cuda" else "int8"
 
                     transcriber = WhisperModel(model_name, device=device, compute_type=compute_type)

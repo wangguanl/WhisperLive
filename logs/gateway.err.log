@@ -1,0 +1,15 @@
+2026-08-09 12:54:39,721 [INFO] gateway: === WhisperLive 适配网关 ===
+2026-08-09 12:54:39,722 [INFO] gateway: 对外 WS : ws://127.0.0.1:47833/v1/stream/transcriptions
+2026-08-09 12:54:39,722 [INFO] gateway: 对外 HTTP: http://127.0.0.1:47834
+2026-08-09 12:54:39,722 [INFO] gateway: 对内引擎: ws://127.0.0.1:47831
+2026-08-09 12:54:39,723 [INFO] gateway.ws: WS 网关监听 ws://127.0.0.1:47833/v1/stream/transcriptions
+2026-08-09 12:54:39,760 [INFO] gateway.rest: HTTP 网关监听 http://127.0.0.1:47834
+INFO:     Started server process [1284]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2026-08-09 12:54:39,803 [INFO] websockets.server: server listening on 127.0.0.1:47833
+INFO:     Uvicorn running on http://127.0.0.1:47834 (Press CTRL+C to quit)
+2026-08-09 12:58:56,076 [INFO] websockets.server: connection open
+2026-08-09 12:59:26,389 [INFO] websockets.server: connection open
+2026-08-09 13:00:56,445 [INFO] websockets.server: connection open
+2026-08-09 13:07:07,266 [INFO] websockets.server: connection open

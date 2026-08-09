@@ -52,7 +52,7 @@ function initPopupElement() {
   popupContainer.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: black; padding: 16px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5); display: none; text-align: center;';
 
   const popupText = document.createElement('span');
-  popupText.textContent = 'Default Text';
+  popupText.textContent = '默认文本';
   popupText.className = 'popupText';
   popupText.style.fontSize = '24px';
   popupContainer.appendChild(popupText);
@@ -60,7 +60,7 @@ function initPopupElement() {
   const buttonContainer = document.createElement('div');
   buttonContainer.style.marginTop = '8px';
   const closePopupButton = document.createElement('button');
-  closePopupButton.textContent = 'Close';
+  closePopupButton.textContent = '关闭';
   closePopupButton.style.backgroundColor = '#65428A';
   closePopupButton.style.color = 'white';
   closePopupButton.style.border = 'none';
@@ -82,7 +82,7 @@ function showPopup(customText) {
   const popupText = popup.querySelector('.popupText');
 
   if (popup && popupText) {
-      popupText.textContent = customText || 'Default Text'; // Set default text if custom text is not provided
+      popupText.textContent = customText || '默认文本'; // Set default text if custom text is not provided
       popup.style.display = 'block';
   }
 }

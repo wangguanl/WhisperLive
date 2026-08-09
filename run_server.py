@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', '-p',
                         type=int,
-                        default=9090,
+                        default=47831,
                         help="Websocket port to run the server on.")
     parser.add_argument('--backend', '-b',
                         type=str,
@@ -53,7 +53,7 @@ if __name__ == "__main__":
                         default="~/.cache/whisper-live/",
                         help='Path to cache the converted ctranslate2 models.')
     parser.add_argument(
-        "--rest_port", type=int, default=8000, help="Port for the REST API server."
+        "--rest_port", type=int, default=47832, help="Port for the REST API server."
     )
     parser.add_argument(
         "--enable_rest",

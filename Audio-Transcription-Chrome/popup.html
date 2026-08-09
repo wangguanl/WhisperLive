@@ -1,40 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Audio Capture</title>
+  <meta charset="UTF-8">
+  <title>音频转写</title>
   <script src="popup.js"></script>
   <link rel="stylesheet" href="style.css" type="text/css">
 </head>
 <body>
-  <div class="header"><img src="./icon128.png"/> <h1>Audio Transcription</h1></div>
+  <div class="header"><img src="./icon128.png"/> <h1>音频转写</h1></div>
   <div class="button-container">
-    <div class="button" id="startCapture">Start Capture</div>
-    <div class="button" id="stopCapture" disabled>Stop Capture</div>
+    <div class="button" id="startCapture">开始捕获</div>
+    <div class="button" id="stopCapture" disabled>停止捕获</div>
   </div>
   <div class="checkbox-container">
     <input type="checkbox" id="useServerCheckbox">
-    <label for="useServerCheckbox">Use Collabora Whisper-Live Server</label>
+    <label for="useServerCheckbox">使用 Collabora Whisper-Live 服务器</label>
   </div>
   <div class="checkbox-container">
     <input type="checkbox" id="useVadCheckbox">
-    <label for="useVadCheckbox">Use Voice Activity Detection</label>
+    <label for="useVadCheckbox">使用语音活动检测</label>
   </div>
   <div class="checkbox-container">
     <input type="checkbox" id="saveCaptionsCheckbox">
-    <label for="saveCaptions">Download SRT file at Stop Capture</label>
+    <label for="saveCaptions">停止捕获时下载 SRT 字幕文件</label>
   </div>
   <div class="dropdown-container">
-    <label for="captionLinesDropdown">Caption Lines:</label>
+    <label for="captionLinesDropdown">字幕行数：</label>
     <select id="captionLinesDropdown">
-      <option value="3" selected>3 lines</option>
-      <option value="5">5 lines</option>
-      <option value="8">8 lines</option>
+      <option value="3" selected>3 行</option>
+      <option value="5">5 行</option>
+      <option value="8">8 行</option>
     </select>
   </div>
   <div class="dropdown-container">
-    <label for="languageDropdown">Select Language:</label>
+    <label for="languageDropdown">选择语言：</label>
     <select id="languageDropdown">
-      <option value="" selected>Automatically detect</option>
+      <option value="" selected>自动检测</option>
       <option value="af">Afrikaans</option>
       <option value="sq">Albanian</option>
       <option value="am">Amharic</option>
@@ -50,7 +51,7 @@
       <option value="br">Breton</option>
       <option value="bg">Bulgarian</option>
       <option value="ca">Catalan</option>
-      <option value="zh">Chinese</option>
+      <option value="zh">中文</option>
       <option value="hr">Croatian</option>
       <option value="cs">Czech</option>
       <option value="da">Danish</option>
@@ -137,25 +138,25 @@
     </select>
   </div>
   <div class="dropdown-container">
-    <label for="taskDropdown">Select task:</label>
+    <label for="taskDropdown">选择任务：</label>
     <select id="taskDropdown" >
-      <option value="">Select Task</option>
-      <option value="transcribe" selected>Transcribe</option>
-      <option value="translate">Translate</option>
+      <option value="">选择任务</option>
+      <option value="transcribe" selected>转写</option>
+      <option value="translate">翻译</option>
     </select>
   </div>
   <div class="dropdown-container">
-    <label for="modelSizeDropdown">Select Model Size:</label>
+    <label for="modelSizeDropdown">选择模型大小：</label>
     <select id="modelSizeDropdown">
-      <option value="">Select model</option>
+      <option value="">选择模型</option>
       <option value="tiny">Tiny </option>
-      <option value="tiny.en">Tiny (English-only)</option>
+      <option value="tiny.en">Tiny（仅英文）</option>
       <option value="base">Base</option>
-      <option value="base.en">Base (English-only)</option>
+      <option value="base.en">Base（仅英文）</option>
       <option value="small" selected>Small</option>
-      <option value="small.en">Small (English-only)</option>
+      <option value="small.en">Small（仅英文）</option>
       <option value="medium">Medium</option>
-      <option value="medium.en">Medium (English-only)</option>
+      <option value="medium.en">Medium（仅英文）</option>
       <option value="large-v2">Large-v2</option>
       <option value="large-v3">Large-v3</option>
     </select>
