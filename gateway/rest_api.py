@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from gateway import config
 from gateway.models_registry import get_registry
+from gateway.rtf_probe import measure_rtf
 from gateway.ws_gateway import WsGateway  # noqa: F401  (复用上游可达性概念)
 
 log = logging.getLogger("gateway.rest")
@@ -22,26 +23,44 @@ def _is_loopback(host: str) -> bool:
     return host in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
 
 
-def recommend_parameters(cfg: dict) -> dict:
-    """经验映射法：按 本地/远程 + 模型规模 返回推荐分块与缓冲（契约 §3 方案2）。"""
+def _rtf_to_params(rtf: float, mode: str):
+    """按实测实时率 RTF 折算分块/缓冲。RTF 越小(模型越快)→ 分块/缓冲越小。"""
+    if rtf <= 0.3:
+        chunk_ms, buf = (300, 2.0)
+    elif rtf <= 0.6:
+        chunk_ms, buf = (400, 3.0)
+    elif rtf <= 1.0:
+        chunk_ms, buf = (500, 5.0)
+    else:
+        chunk_ms, buf = (800, 8.0)  # 慢于实时，需更大缓冲兜底
+    if mode == "remote":
+        chunk_ms = max(chunk_ms, 500)
+        buf = max(buf, 5.0)
+    return chunk_ms, buf
+
+
+def recommend_parameters(cfg: dict, rtf: dict | None = None) -> dict:
+    """按实测 RTF 返回推荐分块与缓冲；无 RTF 时回退经验映射法。"""
     mode = "local" if _is_loopback(cfg.get("upstream_host", "127.0.0.1")) else "remote"
     engine = get_registry().current_engine_model()
 
-    # 模型规模：以型号名粗判（large/medium 偏大，small/base 偏小）
-    size = next((k for k in ("large", "medium", "small", "base", "tiny") if k in engine.lower()), "small")
-    heavy = size in ("large", "medium")
-
-    if mode == "local":
-        chunk_ms, buf = (400, 3.0) if heavy else (300, 2.0)
+    if rtf and rtf.get("rtf") is not None:
+        chunk_ms, buf = _rtf_to_params(rtf["rtf"], mode)
         rationale = (
-            "本地回环网络延迟极低、无公网抖动，{}分块 + {}s 缓冲可在实时性与稳定性间取得平衡"
-            .format(chunk_ms, int(buf))
+            "实测模型实时率 RTF={}，{}网络下取 {}ms 分块 + {}s 缓冲"
+            .format(rtf["rtf"], mode, chunk_ms, int(buf))
         )
     else:
-        chunk_ms, buf = (800, 8.0) if heavy else (500, 5.0)
+        # 兜底：经验映射法（按 本地/远程 + 模型规模）
+        size = next((k for k in ("large", "medium", "small", "base", "tiny") if k in engine.lower()), "small")
+        heavy = size in ("large", "medium")
+        if mode == "local":
+            chunk_ms, buf = (400, 3.0) if heavy else (300, 2.0)
+        else:
+            chunk_ms, buf = (800, 8.0) if heavy else (500, 5.0)
         rationale = (
-            "远程/公网环境需抗网络抖动与丢包，{}ms 分块 + {}s 缓冲优先保证稳定，牺牲少量实时性"
-            .format(chunk_ms, int(buf))
+            "{}网络 + {}模型，取 {}ms 分块 + {}s 缓冲（未测速，经验值）"
+            .format(mode, engine, chunk_ms, int(buf))
         )
 
     return {
@@ -50,6 +69,7 @@ def recommend_parameters(cfg: dict) -> dict:
         "chunk_ms_range": [200, 800] if mode == "local" else [400, 1200],
         "buffer_secs_range": [0.5, 60],
         "mode": mode,
+        "rtf": rtf,
         "rationale": rationale,
     }
 
@@ -78,6 +98,8 @@ def build_app(cfg: dict) -> FastAPI:
     async def list_models():
         return _ok({
             "current": registry.current(),
+            "current_status": registry.current_status(),
+            "current_downloaded": registry.current_downloaded(),
             "active_sessions": 0,
             "models": registry.list_models(),
         })
@@ -111,8 +133,14 @@ def build_app(cfg: dict) -> FastAPI:
 
     @app.get("/v1/stream/parameters")
     async def stream_parameters():
-        """转写参数建议：分块时长 + 缓冲（契约《参数推荐接口需求》§2.1）。"""
-        return _ok(recommend_parameters(cfg))
+        """转写参数建议：对选中模型实测实时率(RTF)，据模型能力返回分块/缓冲预设。"""
+        meta = registry.current_model_meta()
+        if not meta:
+            return _err(404, "未选择模型")
+        if not registry.current_downloaded():
+            return _err(409, "当前模型未下载，请先下载后再测速")
+        rtf = measure_rtf(meta.get("repo_id"))
+        return _ok(recommend_parameters(cfg, rtf))
 
     return app
 
