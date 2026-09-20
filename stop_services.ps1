@@ -7,7 +7,7 @@
 # ============================================================================
 $ErrorActionPreference = 'Stop'
 
-# Ports (match E:\Pro2\.env and start_services.ps1)
+# Ports (match E:\AI\local-voice\.env and start_services.ps1)
 $EnginePort = 47831   # WHISPERLIVE_WS_PORT
 $GatewayPort = 47834  # WHISPERLIVE_GW_HTTP_PORT
 

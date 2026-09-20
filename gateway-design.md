@@ -100,7 +100,7 @@ downloaded ── select ──▶ active（changed:true/false）
 ## 6. 目录与文件规划（建议）
 
 ```
-E:\Pro2\WhisperLive\
+E:\AI\local-voice\WhisperLive\
   gateway\
     __init__.py
     config.py          # 端口/模型登记表/上游地址配置

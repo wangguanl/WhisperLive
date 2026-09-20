@@ -15,7 +15,7 @@ import time
 log = logging.getLogger("gateway.rtfprobe")
 
 # 与引擎一致：注入 nvidia DLL 目录到 PATH
-_BASE = r"e:\Pro2\WhisperLive\.venv\Lib\site-packages\nvidia"
+_BASE = r"E:\AI\local-voice\WhisperLive\.venv\Lib\site-packages\nvidia"
 for _d in ("cublas", "cuda_nvrtc", "curand"):
     _p = os.path.join(_BASE, _d, "bin")
     if os.path.isdir(_p) and _p not in os.environ.get("PATH", ""):

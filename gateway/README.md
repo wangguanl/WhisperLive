@@ -12,10 +12,10 @@
 
 ## 启动
 
-前置：先启动 WhisperLive 引擎（`run_server.py --port 47831`，沿用 `E:\Pro2\.env` 约定）。
+前置：先启动 WhisperLive 引擎（`run_server.py --port 47831`，沿用 `E:\AI\local-voice\.env` 约定）。
 
 ```bash
-# 默认端口 47833/47834（沿 E:\Pro2\.env 的 WHISPERLIVE_GW_WS_PORT / WHISPERLIVE_GW_HTTP_PORT）
+# 默认端口 47833/47834（沿 E:\AI\local-voice\.env 的 WHISPERLIVE_GW_WS_PORT / WHISPERLIVE_GW_HTTP_PORT）
 python run_gateway.py
 
 # 自定义端口/上游

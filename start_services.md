@@ -13,7 +13,7 @@
 
 ## 端口约定
 
-端口严格遵循 `E:\Pro2\.env`：
+端口严格遵循 `E:\AI\local-voice\.env`：
 
 | `.env` 变量 | 端口 | 用途 |
 |------|------|------|
@@ -32,13 +32,13 @@
 ### 方式一：PowerShell 直接执行
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File E:\Pro2\WhisperLive\start_services.ps1
+powershell -ExecutionPolicy Bypass -File E:\AI\local-voice\WhisperLive\start_services.ps1
 ```
 
 ### 方式二：在已打开的 PowerShell 里执行
 
 ```powershell
-cd E:\Pro2\WhisperLive
+cd E:\AI\local-voice\WhisperLive
 .\start_services.ps1
 ```
 
@@ -46,7 +46,7 @@ cd E:\Pro2\WhisperLive
 
 ## 脚本做了什么
 
-1. **创建日志目录**：`E:\Pro2\WhisperLive\logs`（不存在则创建）。
+1. **创建日志目录**：`E:\AI\local-voice\WhisperLive\logs`（不存在则创建）。
 2. **启动引擎**：检查端口 `47831` 是否被占用，若被占用先停掉占用进程，再用 `.venv` 的 Python 启动 `run_server.py --port 47831 --rest_port 47832 --backend faster_whisper`，并自动配置 GPU 运行所需环境。
 3. **启动网关**：检查端口 `47834` 是否被占用，若被占用先停掉占用进程，再用 `.venv` 的 Python 启动 `run_gateway.py`（默认上游为引擎 `47831`）。
 4. **等待就绪**：轮询等待引擎（最长 90 秒）和网关（最长 30 秒）开始监听端口。

@@ -5,7 +5,7 @@
   - 音频：二进制帧，16k/mono/s16le，建议 480ms = 7680 字节
   - 返回（文本帧）：session_started / partial / transcript / session_ended / error
 
-对内（引擎）：连接 ws://127.0.0.1:47831（WHISPERLIVE_WS_PORT，见 E:\Pro2\.env）
+对内（引擎）：连接 ws://127.0.0.1:47831（WHISPERLIVE_WS_PORT，见 E:\AI\local-voice\.env）
   - 首帧 JSON options（uid/language/task/model/use_vad/audio_format=int16）
   - 音频：二进制帧
   - 引擎回 JSON：SERVER_READY / {"segments":[...]}（completed 标记定稿）

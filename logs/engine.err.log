@@ -1,0 +1,53 @@
+INFO:root:Single model mode currently only works with custom models.
+ERROR:websockets.server:opening handshake failed
+Traceback (most recent call last):
+  File "E:\Pro2\WhisperLive\.venv\lib\site-packages\websockets\http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+  File "E:\Pro2\WhisperLive\.venv\lib\site-packages\websockets\http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+  File "E:\Pro2\WhisperLive\.venv\lib\site-packages\websockets\streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\Pro2\WhisperLive\.venv\lib\site-packages\websockets\server.py", line 547, in parse
+    request = yield from Request.parse(
+  File "E:\Pro2\WhisperLive\.venv\lib\site-packages\websockets\http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\Pro2\WhisperLive\.venv\lib\site-packages\websockets\sync\server.py", line 592, in conn_handler
+    connection.handshake(
+  File "E:\Pro2\WhisperLive\.venv\lib\site-packages\websockets\sync\server.py", line 189, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+INFO:websockets.server:connection open
+INFO:root:New client connected
+INFO:root:Using Device=cuda with precision float16
+INFO:root:Loading model: small
+INFO:httpx:HTTP Request: GET https://hf-mirror.com/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 308 Permanent Redirect"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+INFO:root:Running faster_whisper backend.
+INFO:faster_whisper:Processing audio with duration 00:01.440
+INFO:faster_whisper:VAD filter removed 00:00.000 of audio
+INFO:faster_whisper:Processing audio with duration 00:12.480
+INFO:faster_whisper:VAD filter removed 00:00.000 of audio
+INFO:faster_whisper:Processing audio with duration 00:07.280
+INFO:faster_whisper:VAD filter removed 00:00.000 of audio
+INFO:faster_whisper:Processing audio with duration 00:01.520
+INFO:faster_whisper:VAD filter removed 00:00.000 of audio
+INFO:faster_whisper:Processing audio with duration 00:01.520
+INFO:faster_whisper:VAD filter removed 00:00.000 of audio
+INFO:faster_whisper:Processing audio with duration 00:01.520
+INFO:faster_whisper:VAD filter removed 00:00.000 of audio
+INFO:faster_whisper:Processing audio with duration 00:01.520
+INFO:faster_whisper:VAD filter removed 00:00.000 of audio
+INFO:root:Connection closed by client
+INFO:root:Cleaning up.
+ERROR:root:[ERROR]: Sending data to client: received 1000 (OK); then sent 1000 (OK)
+INFO:root:Exiting speech to text thread

@@ -1,16 +1,16 @@
 # ============================================================================
 # WhisperLive service startup script (engine + adapter gateway)
-# Ports follow E:\Pro2\.env:
+# Ports follow E:\AI\local-voice\.env:
 #   engine  WS 47831 / REST 47832
 #   gateway WS 47833 / HTTP 47834
 # Usage: powershell -ExecutionPolicy Bypass -File start_services.ps1
 # ============================================================================
 $ErrorActionPreference = 'Stop'
 
-$Project = 'E:\Pro2\WhisperLive'
+$Project = 'E:\AI\local-voice\WhisperLive'
 $VenvPy  = Join-Path $Project '.venv\Scripts\python.exe'
 
-# Ports (match E:\Pro2\.env)
+# Ports (match E:\AI\local-voice\.env)
 $EnginePort = 47831   # WHISPERLIVE_WS_PORT
 $EngineRest = 47832   # WHISPERLIVE_REST_PORT
 $GwWs  = 47833        # WHISPERLIVE_GW_WS_PORT
@@ -59,9 +59,9 @@ Write-Host "[engine] starting WhisperLive engine (WS $EnginePort / REST $EngineR
 $env:HF_HUB_DISABLE_XET = '1'
 $env:HF_HOME = 'E:\huggingface_cache'
 $env:PATH = (
-    'e:\Pro2\WhisperLive\.venv\Lib\site-packages\nvidia\cublas\bin;' +
-    'e:\Pro2\WhisperLive\.venv\Lib\site-packages\nvidia\cuda_nvrtc\bin;' +
-    'e:\Pro2\WhisperLive\.venv\Lib\site-packages\nvidia\curand\bin;' + $env:PATH
+    'E:\AI\local-voice\WhisperLive\.venv\Lib\site-packages\nvidia\cublas\bin;' +
+    'E:\AI\local-voice\WhisperLive\.venv\Lib\site-packages\nvidia\cuda_nvrtc\bin;' +
+    'E:\AI\local-voice\WhisperLive\.venv\Lib\site-packages\nvidia\curand\bin;' + $env:PATH
 )
 Start-Process -FilePath $VenvPy `
     -ArgumentList @(
