@@ -52,18 +52,24 @@ GW_WS_PORT=47833 GW_HTTP_PORT=47834 GW_UPSTREAM_PORT=47831 python run_gateway.py
 
 ## 模型登记
 
-`gateway/config.py` 的 `MODELS_REGISTRY` 是数据驱动的登记表。新增模型只需追加一条：
+`gateway/config.py` 的 `_WHISPER_MODELS` 是数据驱动的登记表（6 元组），新增模型只需追加一条：
 ```python
-{
-    "id": "faster-whisper-small",        # 前端引用的逻辑 ID
-    "name": "Faster Whisper Small",
-    "repo_id": "Systran/faster-whisper-small",
-    "family": "asr",
-    "size_hint": "约 464 MB (int8)",
-    "local_dir": r"E:\huggingface_cache\hub\models--Systran--faster-whisper-small",
-    "engine_model": "small",             # 传给引擎的模型名
-}
+# (id, repo_id, engine_model, 名称, 大小, 优劣势)
+_WHISPER_MODELS = [
+    ...
+    (
+        "faster-whisper-small",               # 前端引用的逻辑 ID
+        "Systran/faster-whisper-small",       # Hugging Face 仓库
+        "small",                              # 传给 WhisperLive 引擎的模型名
+        "Faster Whisper Small",               # 展示名
+        "约 464 MB (int8)",                    # 大小提示
+        "速度与准确率均衡；专有名词一般",        # 优劣势一句话，供前端列表展示
+    ),
+]
 ```
+`MODELS_REGISTRY` 由 `_WHISPER_MODELS` 派生（`family` 固定 `"asr"`、`description` 自动生成），
+**不要直接改它**。本地是否存在由 HF 缓存自动判定（`models_registry._hf_cache_exists`），
+无需登记 `local_dir`。
 
 ## 关键实现点
 

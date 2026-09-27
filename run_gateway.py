@@ -4,7 +4,7 @@
   - WebSocket 流式转写   ws://127.0.0.1:47833/v1/stream/transcriptions
   - HTTP 模型管理        http://127.0.0.1:47834
 
-端口沿用 E:\\Pro2\\.env 分配约定（WHISPERLIVE_GW_WS_PORT=47833、WHISPERLIVE_GW_HTTP_PORT=47834）。
+端口沿用 E:\AI\local-voice\.env 分配约定（WHISPERLIVE_GW_WS_PORT=47833、WHISPERLIVE_GW_HTTP_PORT=47834）。
 前置：先启动 WhisperLive 引擎（run_server.py --port 47831，即 WHISPERLIVE_WS_PORT）。
 
 用法：
