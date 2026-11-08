@@ -20,6 +20,7 @@ from starlette.responses import PlainTextResponse, StreamingResponse
 import uvicorn
 from faster_whisper import WhisperModel
 import ctranslate2
+from faster_whisper.utils import format_timestamp
 import torch
 
 from enum import Enum
@@ -342,6 +343,8 @@ class TranscriptionServer:
                     task=options["task"],
                     client_uid=options["uid"],
                     model=options["model"],
+                    initial_prompt=options.get("initial_prompt"),
+                    hotwords=options.get("hotwords"),
                     single_model=self.single_model,
                     send_last_n_segments=options.get("send_last_n_segments", 10),
                     no_speech_thresh=options.get("no_speech_thresh", 0.45),
@@ -493,6 +496,10 @@ class TranscriptionServer:
             A numpy array containing the audio.
         """
         frame_data = websocket.recv()
+        if isinstance(frame_data, str):
+            # Audio always arrives as binary frames; text frames carry control messages.
+            self.handle_control_message(websocket, frame_data)
+            return None
         if frame_data == b"END_OF_AUDIO":
             return False
         audio_format = self.audio_formats.get(websocket)
@@ -503,6 +510,32 @@ class TranscriptionServer:
             audio_np = np.frombuffer(frame_data, dtype=np.int16)
             return audio_np.astype(np.float32) / 32768.0
         return np.frombuffer(frame_data, dtype=np.float32)
+
+    def handle_control_message(self, websocket, frame_data):
+        """
+        Handle a text (control) frame sent by the client.
+
+        Args:
+            websocket: The websocket the frame arrived on.
+            frame_data (str): The text frame.
+
+        Returns:
+            bool: True when a control message was understood.
+        """
+        try:
+            message = json.loads(frame_data)
+        except (TypeError, ValueError):
+            logging.warning(f"Ignoring malformed control message: {frame_data!r}")
+            return False
+        if not isinstance(message, dict):
+            logging.warning(f"Ignoring non-object control message: {frame_data!r}")
+            return False
+        if message.get("reset_transcript"):
+            client = self.client_manager.get_client(websocket)
+            if client is not None:
+                client.request_transcript_reset()
+                return True
+        return False
 
     def batch_admission_refusal(self, websocket, options):
         """Why a new client is turned away in batch mode, None when it may connect.
@@ -568,6 +601,9 @@ class TranscriptionServer:
 
     def process_audio_frames(self, websocket):
         frame_np = self.get_audio_from_websocket(websocket)
+        if frame_np is None:
+            # Control frame (e.g. a transcript reset request), no audio to process.
+            return True
         client = self.client_manager.get_client(websocket)
         if frame_np is False:
             if self.backend.is_tensorrt():
@@ -986,12 +1022,14 @@ class TranscriptionServer:
                     wl_metrics.track_rest_request(endpoint="transcriptions", status=200)
                     return verbose
                 elif response_format in ["srt", "vtt"]:
-                    output = []
+                    # a WebVTT file must start with the WEBVTT header
+                    output = ["WEBVTT\n"] if response_format == "vtt" else []
+                    decimal_marker = "," if response_format == "srt" else "."
                     for i, seg in enumerate(segments, 1):
-                        start = f"{int(seg.start // 3600):02}:{int((seg.start % 3600) // 60):02}:{seg.start % 60:06.3f}"
-                        end = f"{int(seg.end // 3600):02}:{int((seg.end % 3600) // 60):02}:{seg.end % 60:06.3f}"
+                        start = format_timestamp(seg.start, always_include_hours=True, decimal_marker=decimal_marker)
+                        end = format_timestamp(seg.end, always_include_hours=True, decimal_marker=decimal_marker)
                         if response_format == "srt":
-                            output.append(f"{i}\n{start.replace('.', ',')} --> {end.replace('.', ',')}\n{seg.text.strip()}\n")
+                            output.append(f"{i}\n{start} --> {end}\n{seg.text.strip()}\n")
                         else:  # vtt
                             output.append(f"{start} --> {end}\n{seg.text.strip()}\n")
                     wl_metrics.track_rest_request(endpoint="transcriptions", status=200)

@@ -1015,12 +1015,12 @@ class TestRestTranscribeModelAndLanguage(unittest.TestCase):
         self.server = TranscriptionServer()
         self.server.client_manager = ClientManager(max_clients=2, max_connection_time=60)
 
-    def _post(self, mock_model_cls, **fields):
+    def _post(self, mock_model_cls, segment=None, **fields):
         import io
         from fastapi.testclient import TestClient
 
         transcriber = MagicMock()
-        transcriber.transcribe.return_value = (iter([_make_segment()]), _make_transcription_info())
+        transcriber.transcribe.return_value = (iter([segment or _make_segment()]), _make_transcription_info())
         mock_model_cls.return_value = transcriber
         self.transcriber = transcriber
 
@@ -1079,6 +1079,30 @@ class TestRestTranscribeModelAndLanguage(unittest.TestCase):
         body = resp.json()
         self.assertEqual(body["language"], "en")
         self.assertAlmostEqual(body["language_probability"], 0.97)
+
+    @patch("whisper_live.server.WhisperModel")
+    def test_vtt_response_starts_with_webvtt_header(self, mock_model_cls):
+        resp = self._post(mock_model_cls, response_format="vtt")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.text, "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nhello\n")
+
+    @patch("whisper_live.server.WhisperModel")
+    def test_srt_response_has_no_webvtt_header(self, mock_model_cls):
+        resp = self._post(mock_model_cls, response_format="srt")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.text, "1\n00:00:00,000 --> 00:00:01,000\nhello\n")
+
+    @patch("whisper_live.server.WhisperModel")
+    def test_srt_timestamp_rounds_into_the_next_minute(self, mock_model_cls):
+        segment = _make_segment(start=59.9996, end=61.0)
+        resp = self._post(mock_model_cls, segment=segment, response_format="srt")
+        self.assertIn("00:01:00,000 --> 00:01:01,000", resp.text)
+
+    @patch("whisper_live.server.WhisperModel")
+    def test_vtt_timestamp_rounds_into_the_next_minute(self, mock_model_cls):
+        segment = _make_segment(start=59.9996, end=61.0)
+        resp = self._post(mock_model_cls, segment=segment, response_format="vtt")
+        self.assertIn("00:01:00.000 --> 00:01:01.000", resp.text)
 
 
 class TestStreamLanguageEvent(unittest.TestCase):
@@ -1335,3 +1359,65 @@ class TestAdmissionRateLimiter(unittest.TestCase):
             clock[0] += 0.5
             self.assertTrue(limiter.allow())
             self.assertFalse(limiter.allow())
+
+class TestTranscriptionServerControlFrames(unittest.TestCase):
+    """Text frames are control messages; audio always arrives as binary frames."""
+
+    def setUp(self):
+        self.server = TranscriptionServer()
+        self.server.client_manager = MagicMock()
+
+    def test_reset_control_frame_requests_transcript_reset(self):
+        ws = MagicMock()
+        ws.recv.return_value = json.dumps({"reset_transcript": True})
+
+        result = self.server.get_audio_from_websocket(ws)
+
+        self.assertIsNone(result)
+        client = self.server.client_manager.get_client.return_value
+        client.request_transcript_reset.assert_called_once()
+
+    def test_malformed_control_frame_is_ignored(self):
+        ws = MagicMock()
+        ws.recv.return_value = "not json"
+
+        result = self.server.get_audio_from_websocket(ws)
+
+        self.assertIsNone(result)
+        client = self.server.client_manager.get_client.return_value
+        client.request_transcript_reset.assert_not_called()
+
+    def test_control_frame_does_not_feed_audio(self):
+        ws = MagicMock()
+        ws.recv.return_value = json.dumps({"reset_transcript": True})
+        client = self.server.client_manager.get_client.return_value
+
+        keep_going = self.server.process_audio_frames(ws)
+
+        self.assertTrue(keep_going)
+        client.add_frames.assert_not_called()
+
+
+class TestHandleControlMessage(unittest.TestCase):
+    """Text control frames must not crash the receive loop on non-object JSON."""
+
+    def setUp(self):
+        self.server = TranscriptionServer.__new__(TranscriptionServer)
+        self.websocket = MagicMock()
+        self.server.client_manager = MagicMock()
+
+    def test_non_object_json_is_ignored(self):
+        for frame in ("42", "[]", '"hello"', "null", "true"):
+            self.assertFalse(self.server.handle_control_message(self.websocket, frame))
+
+    def test_malformed_json_is_ignored(self):
+        self.assertFalse(self.server.handle_control_message(self.websocket, "{not json"))
+
+    def test_reset_message_requests_a_reset(self):
+        client = MagicMock()
+        self.server.client_manager.get_client.return_value = client
+
+        self.assertTrue(self.server.handle_control_message(
+            self.websocket, json.dumps({"reset_transcript": True})))
+
+        client.request_transcript_reset.assert_called_once()

@@ -46,7 +46,8 @@ setup(
     ),
     install_requires=[
         "PyAudio",
-        "av",
+        # PyAV 19 dropped the metadata_errors argument that faster-whisper's decode_audio passes
+        "av<19",
         "faster-whisper==1.2.0",
         "torch",
         "torchaudio",
@@ -59,7 +60,8 @@ setup(
         "openai-whisper==20250625",
         "kaldialign",
         "soundfile",
-        "tokenizers==0.20.3",
+        "transformers[torch]<5",
+        "tokenizers>=0.20.3,<0.23",
         "librosa",
         "numpy>=1.26.4,<2.5",
         "openvino",

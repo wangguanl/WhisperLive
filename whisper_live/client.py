@@ -293,6 +293,15 @@ class Client:
             print(f"[INFO]: Server Running with backend {self.server_backend}")
             return
 
+        if "message" in message.keys() and message["message"] == "TRANSCRIPT_RESET":
+            self.transcript = []
+            self.translated_transcript = []
+            self.last_segment = None
+            self.last_received_segment = None
+            self.last_translated_segment = None
+            print("[INFO]: Transcript reset")
+            return
+
         if "language" in message.keys():
             self.language = message.get("language")
             lang_prob = message.get("language_prob")
@@ -383,6 +392,22 @@ class Client:
                 }
             )
         )
+
+    def reset_transcript(self):
+        """
+        Ask the server to start a fresh transcript on the current connection.
+
+        Audio is always sent as binary frames, so the request goes as a text
+        control frame. The local transcript is cleared when the server
+        acknowledges with ``TRANSCRIPT_RESET``.
+
+        Returns:
+            bool: True when the request was sent.
+        """
+        if not self.recording:
+            return False
+        self.client_socket.send(json.dumps({"reset_transcript": True}))
+        return True
 
     def send_packet_to_server(self, message):
         """
@@ -479,17 +504,7 @@ class TranscriptionTeeClient:
         self.mute_audio_playback = mute_audio_playback
         self.frames = b""
         self.p = pyaudio.PyAudio()
-        try:
-            self.stream = self.p.open(
-                format=self.format,
-                channels=self.channels,
-                rate=self.rate,
-                input=True,
-                frames_per_buffer=self.chunk,
-            )
-        except OSError as error:
-            print(f"[WARN]: Unable to access microphone. {error}")
-            self.stream = None
+        self.stream = None
 
     def __call__(self, audio=None, rtsp_url=None, hls_url=None, save_file=None):
         """
@@ -534,6 +549,11 @@ class TranscriptionTeeClient:
         """Writes out .srt files for all clients."""
         for client in self.clients:
             client.write_srt_file(client.srt_file_path)
+
+    def reset_transcripts(self):
+        """Ask every client to start a fresh transcript on its current connection."""
+        for client in self.clients:
+            client.reset_transcript()
 
     def multicast_packet(self, packet, unconditional=False):
         """
@@ -738,16 +758,20 @@ class TranscriptionTeeClient:
         The recording process can be interrupted by sending a KeyboardInterrupt (e.g., pressing Ctrl+C). After recording,
         the method combines all the saved audio chunks into the specified `out_file`.
         """
+        self.stream, microphone_rate = self.open_microphone()
+        # one resampler for the whole recording, so chunk boundaries don't click
+        resampler = av.AudioResampler(format="s16", layout="mono", rate=self.rate)
         n_audio_file = 0
         if self.save_output_recording:
             if os.path.exists("chunks"):
                 shutil.rmtree("chunks")
             os.makedirs("chunks")
         try:
-            for _ in range(0, int(self.rate / self.chunk * self.record_seconds)):
+            for _ in range(0, int(microphone_rate / self.chunk * self.record_seconds)):
                 if not any(client.recording for client in self.clients):
                     break
                 data = self.stream.read(self.chunk, exception_on_overflow=False)
+                data = self.resample_microphone_chunk(resampler, data, microphone_rate)
                 self.frames += data
 
                 audio_array = self.bytes_to_float_array(data)
@@ -760,10 +784,29 @@ class TranscriptionTeeClient:
                         self.save_chunk(n_audio_file)
                         n_audio_file += 1
                     self.frames = b""
+            self.stream.close()
             self.write_all_clients_srt()
 
         except KeyboardInterrupt:
             self.finalize_recording(n_audio_file)
+
+    def open_microphone(self):
+        stream_options = dict(format=self.format, channels=self.channels, input=True, frames_per_buffer=self.chunk)
+        try:
+            return self.p.open(rate=self.rate, **stream_options), self.rate
+        except OSError as error:
+            if error.errno != pyaudio.paInvalidSampleRate:
+                raise
+        device_rate = int(self.p.get_default_input_device_info()["defaultSampleRate"])
+        print(f"[WARN]: Microphone does not support {self.rate} Hz, recording at {device_rate} Hz and resampling.")
+        return self.p.open(rate=device_rate, **stream_options), device_rate
+
+    @staticmethod
+    def resample_microphone_chunk(resampler, data, microphone_rate):
+        samples = np.frombuffer(data, dtype=np.int16).reshape(1, -1)
+        frame = av.AudioFrame.from_ndarray(samples, format="s16", layout="mono")
+        frame.sample_rate = microphone_rate
+        return b"".join(resampled.to_ndarray().tobytes() for resampled in resampler.resample(frame))
 
     def write_audio_frames_to_file(self, frames, file_name):
         """
@@ -1142,7 +1185,9 @@ class StreamingTranscriptionClient:
             raise ValueError("Expected mono (1-D) array.")
         if np.issubdtype(samples.dtype, np.integer):
             info = np.iinfo(samples.dtype)
-            samples = samples.astype(np.float32) / max(abs(info.min), info.max)
+            samples = np.divide(
+                samples.astype(np.float32), max(abs(info.min), info.max), dtype=np.float32
+            )
         elif samples.dtype != np.float32:
             samples = samples.astype(np.float32)
         self._client.send_packet_to_server(samples.tobytes())
